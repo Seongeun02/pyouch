@@ -44,31 +44,31 @@ pruneTree = function(tree, subData) {
 
 
 # robustness test -------------------------------------------------------------------
+# outPath should contain sim_1 ~ sim_10 folders in each directory
 robustness = function(organ, ouch, dataPath, outPath,  num_sim = 10) {
   # tree
   mammals.tree = ouchtree(ouch$node, ouch$ancestor, ouch$time, labels = as.character(ouch$species))
-
+  
   ## species matrix
-  exp <- read.delim(paste0(dataPath, as.character(organ[1]),".txt"),
-                    header=T, comment.char="", row.names=1, stringsAsFactors = F)
-  species <- colnames(exp)
+  species <- ouch$species[!is.na(ouch$species)]
   sp_mat <- c()
-  for (i in seq(1,10)){
+  for (i in seq(1,num_sim)){
     sp <- sample(species, length(species)-3)
     sp_mat <- cbind(sp_mat, sp)
   }
   write.table(sp_mat, file=paste0(outPath,"species.txt"), sep="\t", quote=F, row.names=T, col.names=T) 
-
+  
   for (o in organ){
     out <- paste0(outPath,as.character(o),"/")
-  
+    
     exp <- read.delim(paste0(dataPath, as.character(o),".txt"),
                       header=T, comment.char="", row.names=1, stringsAsFactors = F)
-
-    write.table(exp, file=paste0(outPath, as.character(o), "/original.txt"), sep="\t", quote=F, row.names=T, col.names=T) 
+    colnames(exp) <- species
+    write.table(exp, file=paste0(dataPath, as.character(o),".txt"), sep="\t", quote=F, row.names=T, col.names=T) 
+    
     
     ## fit model ---------------------------------------------------------
-    for (m in seq(1,10)){
+    for (m in seq(1,num_sim)){
       sp <- sp_mat[,m]
       data_mean.norm <- exp
       
@@ -122,17 +122,18 @@ robustness = function(organ, ouch, dataPath, outPath,  num_sim = 10) {
         
         stats = cbind(gene_name, qvalues, thetas, var, brownSigmas)
         write.table(stats, file=paste0(out,as.character(m),"_sim/", sp[r], ".txt"), sep="\t", quote=F, row.names=T, col.names=T) 
-}
-}}
+      }
+    }}
 }
 
 
 # input data --------------------------------------------------------------
-organ <- c("liver", "heart", "testis", "kidney", "brain")
+organ <- seq(15)
 ouch <- read.delim("/global/home/users/lizsarah/processed_chen/mammals.tree.txt")
-dataPath <- "/global/home/users/lizsarah/processed_chen/mean/"
-outPath <- "/global/home/users/lizsarah/rob_test/"
-
+dataPath <- "/global/home/users/lizsarah/simulation/R/data/"
+outPath <- "/global/home/users/lizsarah/simulation/R/robustness1/"
+## check the expression data, whether has matching columns with ouch tree
 
 ## run
 robustness(organ, ouch, dataPath, outPath,  num_sim = 10) 
+
